@@ -1,0 +1,18 @@
+# Core
+Flask==3.1.*
+Flask-SQLAlchemy==3.1.*
+Flask-Migrate==4.1.*
+Flask-Login==0.6.*
+Flask-CORS==5.0.*
+python-dotenv==1.1.*
+
+# AI
+mistralai==1.*
+
+# Speech
+SpeechRecognition==3.14.*
+pyttsx3==2.98.*
+PyAudio==0.2.*
+
+# Testing
+pytest==8.*

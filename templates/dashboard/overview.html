@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — AICareerConnect{% endblock %}
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+{% block content %}
+<section class="dashboard">
+    <h1>Welcome, {{ current_user.username }}!</h1>
+
+    <div class="dashboard-grid">
+        <!-- Stats cards -->
+        <div class="card" id="card-chats">
+            <h3>Total Chats</h3>
+            <p id="stat-chats">—</p>
+        </div>
+        <div class="card" id="card-assessments">
+            <h3>Assessments</h3>
+            <p id="stat-assessments">—</p>
+        </div>
+
+        <!-- Skill chart -->
+        <div class="card card-wide" id="card-chart">
+            <h3>Skill Scores</h3>
+            <canvas id="skillChart"></canvas>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="card" id="card-actions">
+            <h3>Quick Actions</h3>
+            <button class="btn btn-primary" onclick="location.href='#chat'">💬 Chat with AI</button>
+            <button class="btn btn-secondary" onclick="runAssessment()">📊 Run Assessment</button>
+        </div>
+    </div>
+
+    <!-- Chat panel -->
+    <div class="chat-panel" id="chat">
+        <h2>AI Career Advisor</h2>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-row">
+            <input type="text" id="chatInput" placeholder="Ask about careers, skills, interviews…">
+            <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+            <button class="btn btn-mic" id="micBtn" onclick="toggleRecording()">🎤</button>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

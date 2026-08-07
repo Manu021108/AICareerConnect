@@ -1,0 +1,258 @@
+================================================================================
+                   AICareerConnect — Project Structure Explained
+================================================================================
+
+Full directory tree:
+
+AICareerConnect/
+│
+├── run.py                        # Application entry point
+├── requirements.txt              # Python dependencies
+├── .env.example                  # Template for environment variables
+├── .gitignore                    # Git ignore rules
+│
+├── app/                          # Core application package
+│   ├── __init__.py               # App factory (create_app)
+│   ├── config.py                 # Environment-specific settings
+│   ├── extensions.py             # Flask extension instances
+│   │
+│   ├── models/                   # SQLAlchemy ORM models
+│   │   ├── __init__.py           # Model registry
+│   │   ├── user.py               # User & authentication
+│   │   ├── career_profile.py     # Career data per user
+│   │   ├── chat_history.py       # AI conversation messages
+│   │   └── skill_assessment.py   # Skill evaluation results
+│   │
+│   ├── routes/                   # Flask Blueprints (controllers)
+│   │   ├── __init__.py
+│   │   ├── main.py               # Landing & public pages
+│   │   ├── auth.py               # Register / Login / Logout
+│   │   ├── dashboard.py          # Dynamic dashboard + stats API
+│   │   ├── ai_chat.py            # Mistral-powered chat endpoint
+│   │   ├── speech.py             # STT & TTS endpoints
+│   │   └── career.py             # Profile CRUD & skill assessment
+│   │
+│   ├── services/                 # Business logic layer
+│   │   ├── __init__.py
+│   │   ├── mistral_service.py    # Mistral API integration
+│   │   ├── chat_service.py       # Chat persistence logic
+│   │   ├── speech_service.py     # Speech-to-text & text-to-speech
+│   │   └── career_service.py     # Career profile & assessment logic
+│   │
+│   └── utils/                    # Shared utilities
+│       ├── __init__.py
+│       ├── error_handlers.py     # Custom 404/403/500 handlers
+│       ├── decorators.py         # Reusable decorators (role_required)
+│       └── helpers.py            # Pure helper functions
+│
+├── templates/                    # Jinja2 HTML templates
+│   ├── base.html                 # Master layout (nav, footer, blocks)
+│   ├── index.html                # Landing page
+│   ├── about.html                # About page
+│   ├── auth/
+│   │   ├── login.html            # Login form
+│   │   └── register.html         # Registration form
+│   ├── dashboard/
+│   │   └── overview.html         # Dynamic dashboard UI
+│   └── errors/
+│       ├── 403.html              # Forbidden error page
+│       ├── 404.html              # Not found error page
+│       └── 500.html              # Server error page
+│
+├── static/                       # Static assets served by Flask
+│   ├── css/
+│   │   └── main.css              # Global stylesheet (dark theme)
+│   └── js/
+│       ├── main.js               # Global JavaScript
+│       └── dashboard.js          # Dashboard: charts, chat, speech
+│
+├── instance/                     # SQLite database files (gitignored)
+│   └── .gitkeep
+│
+├── uploads/                      # Temporary audio uploads (gitignored)
+│   └── .gitkeep
+│
+├── tests/                        # Automated test suite
+│   ├── __init__.py
+│   ├── conftest.py               # Shared pytest fixtures
+│   ├── test_auth.py              # Auth route tests
+│   └── test_models.py            # Model unit tests
+│
+└── explaination.txt              # ← You are here
+
+
+================================================================================
+                     WHY EACH FOLDER EXISTS
+================================================================================
+
+1. app/  — The Core Application Package
+─────────────────────────────────────────
+   WHY: Encapsulates ALL server-side Python code inside one importable
+   package. Uses the Application Factory pattern (create_app()) so the same
+   code can boot in dev, test, or production mode just by passing a config
+   name. This is the #1 best practice recommended by Flask's own docs.
+
+2. app/models/  — SQLAlchemy ORM Models
+─────────────────────────────────────────
+   WHY: Each database table gets its own file (user.py, chat_history.py,
+   etc.). This keeps model definitions clean and easy to find. The
+   __init__.py imports all models so that db.create_all() discovers every
+   table automatically. We use SQLite as the database engine — zero setup,
+   file-based, perfect for development and small-to-medium deployments.
+
+   Files & their purpose:
+   • user.py            → Auth (password hashing, Flask-Login integration)
+   • career_profile.py  → Stores skills, goals, education per user
+   • chat_history.py    → Persists every user ↔ AI message for context
+   • skill_assessment.py→ AI-generated skill scores and recommendations
+
+3. app/routes/  — Flask Blueprints (Controllers)
+─────────────────────────────────────────────────
+   WHY: Blueprints let us split URL handlers into logical modules instead
+   of one giant app.py file. Each blueprint owns a URL prefix:
+
+   • main.py      → /           (landing, about)
+   • auth.py      → /auth       (register, login, logout)
+   • dashboard.py → /dashboard  (overview page + JSON stats API)
+   • ai_chat.py   → /api/chat   (send messages to Mistral, get replies)
+   • speech.py    → /api/speech  (upload audio → text, text → audio)
+   • career.py    → /api/career  (profile CRUD, trigger assessments)
+
+   This maps 1:1 to your six requirements and makes the codebase
+   navigable at a glance.
+
+4. app/services/  — Business Logic Layer
+─────────────────────────────────────────
+   WHY: Routes should be thin — they parse requests and return responses.
+   The heavy lifting (calling Mistral, processing audio, running
+   assessments) lives in services. This separation means:
+   • Routes stay ~20 lines each
+   • Services are testable without HTTP
+   • Swapping Mistral for OpenAI means changing ONE file
+
+   Key services:
+   • mistral_service.py → Single integration point for ALL Mistral API
+                           calls (chat + assessment). No other file
+                           imports the Mistral SDK directly.
+   • speech_service.py  → STT via SpeechRecognition, TTS via pyttsx3.
+                           Designed to be swappable for Whisper/Azure later.
+   • chat_service.py    → Persist & retrieve chat history from SQLite.
+   • career_service.py  → Profile updates + orchestrates skill assessment
+                           by calling mistral_service under the hood.
+
+5. app/utils/  — Shared Utilities
+─────────────────────────────────
+   WHY: Cross-cutting concerns that don't belong to any single feature:
+   • error_handlers.py → Content-negotiated errors (HTML for browsers,
+                          JSON for API clients)
+   • decorators.py     → @role_required and future middleware
+   • helpers.py        → Small pure functions (safe JSON parsing, etc.)
+
+6. templates/  — Jinja2 HTML Templates
+───────────────────────────────────────
+   WHY: Flask's convention is to keep templates outside the app/ package
+   (or inside it — we configure this in the factory). We use template
+   inheritance: base.html defines the layout, every page extends it.
+
+   Sub-folders mirror the blueprint structure:
+   • auth/      → login.html, register.html
+   • dashboard/ → overview.html (the dynamic dashboard with Chart.js)
+   • errors/    → 403, 404, 500 error pages
+
+7. static/  — CSS, JavaScript, Images
+──────────────────────────────────────
+   WHY: Flask serves these files directly. Splitting into css/ and js/
+   keeps assets organized as the project grows.
+
+   • css/main.css      → Dark-mode design system with CSS custom
+                          properties (variables), responsive grid, card
+                          components, chat panel styling
+   • js/main.js        → Global utilities (flash auto-dismiss)
+   • js/dashboard.js   → All dashboard interactivity:
+                          - Fetches /dashboard/api/stats and renders
+                            Chart.js radar charts
+                          - Sends/receives AI chat messages via fetch()
+                          - Records audio via MediaRecorder API → sends
+                            to /api/speech/transcribe
+                          - Uses browser SpeechSynthesis for TTS
+
+8. instance/  — SQLite Database Storage
+───────────────────────────────────────
+   WHY: Flask's instance folder holds data that should NOT be committed
+   to version control — database files, local overrides, etc. Our .gitignore
+   excludes the *.db files but the folder itself is tracked via .gitkeep.
+
+9. uploads/  — Temporary Audio File Storage
+───────────────────────────────────────────
+   WHY: When a user records audio for speech-to-text, the file is saved
+   here temporarily, processed, then deleted. Keeping uploads in a
+   dedicated folder avoids cluttering the project root and makes cleanup
+   easy.
+
+10. tests/  — Automated Test Suite
+───────────────────────────────────
+   WHY: Every production project needs tests. We use pytest with fixtures
+   defined in conftest.py:
+   • app fixture    → creates a test-mode Flask app (in-memory SQLite)
+   • db fixture     → provides a clean database per test
+   • client fixture → Flask's test client for HTTP assertions
+
+   Test files mirror the code they test:
+   • test_auth.py   → smoke tests for register/login pages
+   • test_models.py → unit tests for password hashing, model repr
+
+
+================================================================================
+              HOW THE SIX REQUIREMENTS MAP TO THE STRUCTURE
+================================================================================
+
+┌──────────────────────┬───────────────────────────────────────────────────┐
+│ Requirement          │ Where It Lives                                   │
+├──────────────────────┼───────────────────────────────────────────────────┤
+│ 1. Flask backend     │ app/__init__.py (factory), app/routes/* (BP),    │
+│                      │ run.py (entry point)                             │
+├──────────────────────┼───────────────────────────────────────────────────┤
+│ 2. SQLite DB         │ app/config.py (URI), app/models/* (tables),      │
+│                      │ instance/ (DB files), app/extensions.py (SQLAlch)│
+├──────────────────────┼───────────────────────────────────────────────────┤
+│ 3. Mistral API       │ app/services/mistral_service.py (all API calls), │
+│                      │ app/routes/ai_chat.py (HTTP endpoint)            │
+├──────────────────────┼───────────────────────────────────────────────────┤
+│ 4. Speech to Text    │ app/services/speech_service.py (STT logic),      │
+│                      │ app/routes/speech.py (/transcribe endpoint),     │
+│                      │ static/js/dashboard.js (MediaRecorder)           │
+├──────────────────────┼───────────────────────────────────────────────────┤
+│ 5. Text to Speech    │ app/services/speech_service.py (TTS logic),      │
+│                      │ app/routes/speech.py (/synthesize endpoint),     │
+│                      │ static/js/dashboard.js (SpeechSynthesis API)     │
+├──────────────────────┼───────────────────────────────────────────────────┤
+│ 6. Dynamic Dashboard │ app/routes/dashboard.py (stats JSON API),        │
+│                      │ templates/dashboard/overview.html (UI),          │
+│                      │ static/js/dashboard.js (Chart.js + fetch)        │
+└──────────────────────┴───────────────────────────────────────────────────┘
+
+
+================================================================================
+                        QUICK START
+================================================================================
+
+1. Create a virtual environment:
+      python -m venv venv
+      venv\Scripts\activate          (Windows)
+
+2. Install dependencies:
+      pip install -r requirements.txt
+
+3. Set up environment variables:
+      copy .env.example .env
+      # Edit .env and add your MISTRAL_API_KEY
+
+4. Run the application:
+      python run.py
+
+5. Open http://localhost:5000 in your browser.
+
+6. Run tests:
+      pytest tests/ -v
+
+================================================================================
