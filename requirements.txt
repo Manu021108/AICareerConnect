@@ -16,3 +16,7 @@ PyAudio==0.2.*
 
 # Testing
 pytest==8.*
+
+# Production
+gunicorn==23.0.*
+
