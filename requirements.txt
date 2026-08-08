@@ -12,7 +12,7 @@ mistralai==1.*
 # Speech
 SpeechRecognition==3.14.*
 pyttsx3==2.98.*
-PyAudio==0.2.*
+
 
 # Testing
 pytest==8.*

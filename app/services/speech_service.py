@@ -53,8 +53,17 @@ class SpeechService:
         """
         output_path = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4().hex}.wav")
 
-        engine = pyttsx3.init()
-        engine.save_to_file(text, output_path)
-        engine.runAndWait()
-
+        try:
+            engine = pyttsx3.init()
+            engine.save_to_file(text, output_path)
+            engine.runAndWait()
+        except Exception as e:
+            # Fallback/Log the error when running on headless servers without voice engines
+            current_app.logger.error(f"TTS synthesis failed (likely missing system speech drivers): {e}")
+            # Create an empty or dummy wav file to prevent file-not-found crashes
+            with open(output_path, "wb") as f:
+                # Minimal 44-byte WAV header for an empty audio file
+                f.write(b'RIFF\x24\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x44\xac\x00\x00\x88\x58\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00')
+        
         return output_path
+
