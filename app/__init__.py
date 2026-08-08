@@ -19,6 +19,10 @@ def create_app(config_name="development"):
     # Load configuration
     app.config.from_object(config_by_name[config_name])
 
+    # Ensure the instance folder exists (required for SQLite database creation)
+    import os
+    os.makedirs(app.instance_path, exist_ok=True)
+
     # Initialize extensions
     _register_extensions(app)
 
